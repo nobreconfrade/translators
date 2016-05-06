@@ -41,3 +41,4 @@ with open(nt_file,'r', buffering = 4096) as f1:
 			newline += '\n'
 			f2.write(newline)
 		print ("Data successfully translated.")
+		
