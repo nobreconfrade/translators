@@ -5,10 +5,16 @@ Author: William Pereira
 
 An RDF NT -> CSV translator, hope it works.
 
-Version 1.00
+Version 1.01
 
 -Saving 'line' in 'newline' on CSV format; CHECKED
 -Save 'newline' on the 'csv_data.csv' file; CHECKED
+-Saving 'line' in 'newline' without a (' ') in the endline; CHECKED
+-Saving 'line' in 'newline' without ('"') in literal cases;
+
+Neo4j sample command to import: 	USING PERIODIC COMMIT 10000
+									LOAD CSV FROM 'file:///csvdata_100.csv' AS line 
+									CREATE (:BSBM{subject: line[0],predicate: line[1],object: line[2]})
 
 """
 nt_file = input ("Write the file name to be translated (without .nt):")
@@ -32,8 +38,9 @@ with open(nt_file,'r', buffering = 4096) as f1:
 				elif(letter == ' ' and space_count<2):
 					newline += letter.replace(' ',',')
 					space_count += 1
-				
-				elif(letter == '.' and line[enum_letter-1] == ' '):
+				elif((letter == '"' and line[enum_letter + 1] == '^') or (letter == '<' and line[enum_letter - 1] == '^')): # CHECK THIS SHIIII...
+					newline += letter.replace('"','')	
+				elif(letter == ' ' and line[enum_letter + 1] == '.'):
 					break
 				else:
 					newline += letter
@@ -41,4 +48,3 @@ with open(nt_file,'r', buffering = 4096) as f1:
 			newline += '\n'
 			f2.write(newline)
 		print ("Data successfully translated.")
-		
