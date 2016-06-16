@@ -7,7 +7,9 @@ For Python ver: 2.7
 
 ////////'mold' cheat sheet:
 
-1 - ProductType
+0  - exit
+1  - ProductType
+2  - ProductFeature
 """
 from neo4j.v1 import GraphDatabase, basic_auth
 
@@ -31,19 +33,19 @@ with open('data_100.ttl','r', buffering = 4096) as f1:
 				elif('rdfs:label' in line):
 					label = line.replace("    rdfs:label \"","")
 					label = label.replace("\" ;","")
-					print(label)
+					# print(label)
 				elif('rdfs:subClassOf' in line):
 					subclassof = line.replace("    rdfs:subClassOf bsbm-inst:","")
 					subclassof = subclassof.replace(" ;","")
-					print(subclassof)
+					# print(subclassof)
 				elif('rdfs:comment' in line):
-					comment = line.replace("rdfs:comment ","")
+					comment = line.replace("    rdfs:comment ","")
 					comment = comment.replace(" ;","")
 				elif('dc:publisher' in line):
-					publisher = line.replace("dc:publisher <","")
+					publisher = line.replace("    dc:publisher <","")
 					publisher = publisher.replace("> ;","")
 				elif('dc:date' in line):
-					date = line.replace("dc:date ","")
+					date = line.replace("    dc:date ","")
 					date = date.replace("^^xsd:date .","")
 					# QUERY
 					session.run("CREATE ("+header+":ProductType {header:\""+header+"\",label:\""+label+"\",comment:"+comment+",date:"+date+"})")
@@ -55,11 +57,31 @@ with open('data_100.ttl','r', buffering = 4096) as f1:
 				else:
 					print("Well, this is embarrassing... mold="+str(mold))
 #######################################################################################################			
-			# elif(mold = 2):
+			elif(mold == 2):
+				if('rdf:type' in line):
+					pass
+				elif('rdfs:label' in line):
+					label = line.replace("    rdfs:label ","")
+					label = label.replace(" ;","")
+					# print(label)
+				elif('rdfs:comment' in line):
+					comment = line.replace("    rdfs:comment ","")
+					comment = comment.replace(" ;","")
+				elif('dc:publisher' in line):
+					pass
+				elif('dc:date' in line):
+					date = line.replace("    dc:date ","")
+					date = date.replace("^^xsd:date .","")
+					# QUERY
+					session.run("CREATE ("+header+":ProductFeature {header:\""+header+"\",label:"+label+",comment:"+comment+",date:"+date+"})")
+					session.run("MATCH (son{header:\""+header+"\"}),(father{header:\""+publisher+"\"}) CREATE (son)-[:publisher]->(father)")
+
+				else:
+					print("Well, this is embarrassing... mold="+str(mold))
 #######################################################################################################			
 			else:
 				print ("--------------Closing program.--------------")
-				session.close()
+				# session.close()
 				print (exit)
 				input()
 #######################################################################################################			
