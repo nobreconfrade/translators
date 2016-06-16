@@ -25,44 +25,53 @@ with open('data_100.ttl','r', buffering = 4096) as f1:
 	for line in f1:
 		if('    ' in line):
 #######################################################################################################			
-			if(mold = 1): 
+			if(mold == 1): 
 				if('rdf:type' in line):
 					pass
 				elif('rdfs:label' in line):
-					label = line.replace("rdfs:label ","")
-					label = line.replace(" ;","")
+					label = line.replace("    rdfs:label \"","")
+					label = label.replace("\" ;","")
+					print(label)
 				elif('rdfs:subClassOf' in line):
-					subclassof = line.replace("rdfs:subClassOf bsbm-inst:","")
-					subclassof = line.replace(" ;","")
+					subclassof = line.replace("    rdfs:subClassOf bsbm-inst:","")
+					subclassof = subclassof.replace(" ;","")
+					print(subclassof)
 				elif('rdfs:comment' in line):
 					comment = line.replace("rdfs:comment ","")
-					comment = line.replace(" ;","")
+					comment = comment.replace(" ;","")
 				elif('dc:publisher' in line):
 					publisher = line.replace("dc:publisher <","")
-					publisher = line.replace("> ;","")
+					publisher = publisher.replace("> ;","")
 				elif('dc:date' in line):
 					date = line.replace("dc:date ","")
-					date = line.replace("^^xsd:date .","")
+					date = date.replace("^^xsd:date .","")
 					# QUERY
-					session.run("CREATE ("+header+":ProductType {header:\""+header+"\",label:"+label+",comment:"+comment+",date:"+date+"})")
+					session.run("CREATE ("+header+":ProductType {header:\""+header+"\",label:\""+label+"\",comment:"+comment+",date:"+date+"})")
 					if(subclassof == ""):
 						session.run("CREATE (publisher:Publisher {header:\""+publisher+"\"})")
 					else:
-						session.run("MATCH (son{header:\""+header+"\"}),(father{header:\""+subclassof+"\"}) CREATE son-[:subClassOf]->father")
-					session.run("MATCH (son{header:\""+header+"\"}),(father{header:\""+publisher+"\"}) CREATE son-[:publisher]->father")
+						session.run("MATCH (son{header:\""+header+"\"}),(father{header:\""+subclassof+"\"}) CREATE (son)-[:subClassOf]->(father)")
+					session.run("MATCH (son{header:\""+header+"\"}),(father{header:\""+publisher+"\"}) CREATE (son)-[:publisher]->(father)")
 				else:
-					print("Well, this is embarrassing... mold="+mold)
+					print("Well, this is embarrassing... mold="+str(mold))
 #######################################################################################################			
 			# elif(mold = 2):
 #######################################################################################################			
 			else:
 				print ("--------------Closing program.--------------")
+				session.close()
 				print (exit)
+				input()
 #######################################################################################################			
 										
 		else:
 			if('bsbm-inst:ProductType' in line):
 				header = line.replace("bsbm-inst:","")
 				mold = 1
+			elif('bsbm-inst:ProductFeature' in line):
+				header = line.replace("bsbm-inst:","")
+				mold = 2
+			else:
+				mold = 0
 
 session.close()
