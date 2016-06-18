@@ -14,15 +14,26 @@ For Python ver: 2.7
 4  - Product
 """
 from neo4j.v1 import GraphDatabase, basic_auth
+import time
 
-
-def checkCountry(country):
-	auxCountry = country.split()
-	if(auxCountry in listCountry): #somthing wrong here
-		return True
-	else:
-		listCountry = listCountry + auxCountry
-		return False
+def timer(start_time):
+	start_time = 0
+	print("--- %s seconds ---" %(time.time() - start_time))
+	print("--- or ---")
+	while (True):
+		if(start_time>=60):
+			minute_time = minute_time + 1
+			start_time = start_time - 60
+		else:
+			False
+	print("--- "+minute_time+" minutes and "+start_time+" seconds ---")
+		
+def checkCountry(country,listCountry):
+	for i in listCountry:
+		if(country == str(i)): 
+			return (listCountry,True)
+	listCountry.append(country)
+	return (listCountry,False)
 
 def connectDB():
 	driver = GraphDatabase.driver("bolt://localhost", auth=basic_auth("neo4j", "admin"))
@@ -32,16 +43,18 @@ def connectDB():
 session = connectDB()
 
 # PERTINENT VARIABLES
+# start_time = time.time() NEEDS REVIEW
 subclassof = ""
 listCountry = []
 
 # PROGRAM
-with open('data_1000.ttl','r', buffering = 4096) as f1:
+with open('data_100.ttl','r', buffering = 4096) as f1:
 	print ("--------------File successfully loaded.--------------")
 	for line in f1:
 		if('    ' in line):
 #######################################################################################################			
-			if(mold == 1): 
+			if(mold == 1):
+				pass
 				if('rdf:type' in line):
 					pass
 				elif('rdfs:label' in line):
@@ -72,6 +85,7 @@ with open('data_1000.ttl','r', buffering = 4096) as f1:
 					print("Well, this is embarrassing... mold="+str(mold))
 #######################################################################################################			
 			elif(mold == 2):
+				pass
 				if('rdf:type' in line):
 					pass
 				elif('rdfs:label' in line):
@@ -116,18 +130,23 @@ with open('data_1000.ttl','r', buffering = 4096) as f1:
 					# QUERY
 					session.run("CREATE ("+header+":Producer {header:\""+header+"\",label:"+label+",comment:"+comment+",date:"+date+"})")
 					session.run("CREATE (homepage:Homepage {header:\""+homepage+"\"})")
-					if(checkCountry(country) == False):
+					listCountry,countryChecked=checkCountry(country,listCountry)
+					if(countryChecked == False):
 						session.run("CREATE (country:Country {header:\""+country+"\"})")
 					session.run("MATCH (son{header:\""+header+"\"}),(father{header:\""+homepage+"\"}) CREATE (son)-[:homepage]->(father)")
 					session.run("MATCH (son{header:\""+header+"\"}),(father{header:\""+country+"\"}) CREATE (son)-[:country]->(father)")
 				else:
 					print("Well, this is embarrassing... mold="+str(mold))
 #######################################################################################################			
-			# elif(mold == 4):
+			elif(mold == 4):
+				pass
+				# print("bom dia!")
 #######################################################################################################			
 			else:
+				print ("--------------Executing database querys.--------------")
+				session.close()
+				# timer(start_time) NEEDS REVIEW 
 				print ("--------------Closing program.--------------")
-				# session.close()
 				print (exit)
 				input()
 #######################################################################################################			
@@ -140,15 +159,11 @@ with open('data_1000.ttl','r', buffering = 4096) as f1:
 				header = line.replace("bsbm-inst:","")
 				mold = 2
 			elif('dataFromProducer' in line):
-				if('Producer' in line):
+				if(':Producer' in line):
 					header = line.split(':')[1]
 					mold = 3
 				else:
-					pass
-				# Work on mold 4
-				# else:
-				# 	header = line.split(':')[1]
-				# 	mold = 4
+					mold = 4
 			else:
 				mold = 0
 
