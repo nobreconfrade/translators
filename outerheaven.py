@@ -14,19 +14,18 @@ For Python ver: 2.7
 4  - Product
 """
 from neo4j.v1 import GraphDatabase, basic_auth
-import time
+from timeit import default_timer as timer
+import sys
 
-def timer(start_time):
-	start_time = 0
-	print("--- %s seconds ---" %(time.time() - start_time))
+def timeCount(startTimer):
+	minuteTime = 0
+	endTimer = timer() - startTimer 
+	print("--- "+str(endTimer)+" seconds ---")
 	print("--- or ---")
-	while (True):
-		if(start_time>=60):
-			minute_time = minute_time + 1
-			start_time = start_time - 60
-		else:
-			False
-	print("--- "+minute_time+" minutes and "+start_time+" seconds ---")
+	while (endTimer>=60):
+		minuteTime = minuteTime + 1
+		endTimer = endTimer - 60
+	print("--- "+str(minuteTime)+" minutes and "+str(endTimer)+" seconds ---")
 		
 def checkCountry(country,listCountry):
 	for i in listCountry:
@@ -43,12 +42,12 @@ def connectDB():
 session = connectDB()
 
 # PERTINENT VARIABLES
-# start_time = time.time() NEEDS REVIEW
+startTimer = timer()
 subclassof = ""
 listCountry = []
 
 # PROGRAM
-with open('data_100.ttl','r', buffering = 4096) as f1:
+with open(sys.argv[1],'r', buffering = 4096) as f1:
 	print ("--------------File successfully loaded.--------------")
 	for line in f1:
 		if('    ' in line):
@@ -145,7 +144,7 @@ with open('data_100.ttl','r', buffering = 4096) as f1:
 			else:
 				print ("--------------Executing database querys.--------------")
 				session.close()
-				# timer(start_time) NEEDS REVIEW 
+				timeCount(startTimer)
 				print ("--------------Closing program.--------------")
 				print (exit)
 				input()
