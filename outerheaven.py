@@ -17,6 +17,11 @@ from neo4j.v1 import GraphDatabase, basic_auth
 from timeit import default_timer as timer
 import sys
 
+def connectDB():
+	driver = GraphDatabase.driver("bolt://localhost", auth=basic_auth("neo4j", "admin"))
+	session = driver.session()	
+	return session
+
 def timeCount(startTimer):
 	minuteTime = 0
 	endTimer = timer() - startTimer 
@@ -34,14 +39,14 @@ def checkCountry(country,listCountry):
 	listCountry.append(country)
 	return (listCountry,False)
 
-def connectDB():
-	driver = GraphDatabase.driver("bolt://localhost", auth=basic_auth("neo4j", "admin"))
-	session = driver.session()	
-	return session
+def getProductPropertyNumeric():
+	return
 
-session = connectDB()
+def getProductPropertyTextural():
+	return
 
 # PERTINENT VARIABLES
+session = connectDB()
 startTimer = timer()
 subclassof = ""
 listCountry = []
@@ -138,8 +143,38 @@ with open(sys.argv[1],'r', buffering = 4096) as f1:
 					print("Well, this is embarrassing... mold="+str(mold))
 #######################################################################################################			
 			elif(mold == 4):
-				pass
-				# print("bom dia!")
+				if('rdf:type bsbm:Product' in line):
+					pass
+				elif('rdfs:label' in line):
+					label = line.replace("    rdfs:label ","")
+					label = label.replace(" ;","")
+				elif('rdfs:comment' in line):
+					comment = line.replace("    rdfs:comment ","")
+					comment = comment.replace(" ;","")
+				elif('rdf:type bsbm-inst' in line):
+					producttype = line.split(':')[2]
+					producttype = producttype.replace(" ;","")
+				elif('bsbm:productPropertyNumeric' in line):
+
+				elif('bsbm:productPropertyTextual' in line):
+
+				elif('bsbm:productFeature' in line):
+					productfeature = line.split(':')[2]
+					productfeature = productfeature.replace(" ;","")
+					session.run("MATCH (son{header:\""+header+"\"}),(father{header:\""+productfeature+"\"}) CREATE (son)-[:productfeature]->(father)")
+				elif('bsbm:producer' in line):
+					producer = line.split(':')[2]
+					producer = producer.replace(" ;","")
+				elif('dc:publisher' in line):
+					publisher = line.split(':')[2]
+					publisher = publisher.replace(" ;","")
+				elif('dc:date' in line):
+					date = line.replace("    dc:date ","")
+					date = date.replace("^^xsd:date .","")
+					# QUERY
+
+				else:
+					print("Well, this is embarrassing... mold="+str(mold))
 #######################################################################################################			
 			else:
 				print ("--------------Executing database querys.--------------")
@@ -162,6 +197,7 @@ with open(sys.argv[1],'r', buffering = 4096) as f1:
 					header = line.split(':')[1]
 					mold = 3
 				else:
+					header = line.split(':')[1]
 					mold = 4
 			else:
 				mold = 0
