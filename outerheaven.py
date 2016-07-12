@@ -5,6 +5,8 @@ Author: William Pereira
 
 For Python ver: 2.7
 
+to add in the database:MATCH p=(header:Product)-[]->() RETURN p LIMIT 100
+
 ////////'mold' cheat sheet:
 
 0  - exit
@@ -39,11 +41,25 @@ def checkCountry(country,listCountry):
 	listCountry.append(country)
 	return (listCountry,False)
 
-def getProductPropertyNumeric():
-	return
+def getProductPropertyNumeric(line):
+	propertynumeric = line.split(' ')[4]
+	propertynumeric = propertynumeric.replace('bsbm:','')
+	numeric = line.split(' ')[5]
+	# print ("-----------------------------------")
+	# print numeric
+	numeric = numeric.replace('^^xsd:integer','')
+	# print numeric
+	stringpropertynumeric = propertynumeric+":"+numeric
+	return stringpropertynumeric
 
-def getProductPropertyTextural():
-	return
+def getProductPropertyTextural(line):
+	propertytextual = line.split(' ')[4]
+	propertytextual = propertytextual.replace('bsbm:','')
+	textual = line.replace('bsbm:'+propertytextual+' ','')
+	textual = textual.replace('^^xsd:string ;','')
+	# print textual
+	stringpropertytextual = propertytextual+":"+textual
+	return stringpropertytextual
 
 # PERTINENT VARIABLES
 session = connectDB()
@@ -143,7 +159,13 @@ with open(sys.argv[1],'r', buffering = 4096) as f1:
 					print("Well, this is embarrassing... mold="+str(mold))
 #######################################################################################################			
 			elif(mold == 4):
+				###########BE AWARE###########
+				# I still don't know if the 4 spaces in the beggining of every line is going to cause trouble with the split(' ')
+				###########BE AWARE###########
 				if('rdf:type bsbm:Product' in line):
+					listpropertynumeric = []
+					listpropertytextual = []
+					listproductfeature = []
 					pass
 				elif('rdfs:label' in line):
 					label = line.replace("    rdfs:label ","")
@@ -155,13 +177,13 @@ with open(sys.argv[1],'r', buffering = 4096) as f1:
 					producttype = line.split(':')[2]
 					producttype = producttype.replace(" ;","")
 				elif('bsbm:productPropertyNumeric' in line):
-
+					listpropertynumeric.append(getProductPropertyNumeric(line)) 
 				elif('bsbm:productPropertyTextual' in line):
-
+					listpropertytextual.append(getProductPropertyTextural(line))
 				elif('bsbm:productFeature' in line):
 					productfeature = line.split(':')[2]
 					productfeature = productfeature.replace(" ;","")
-					session.run("MATCH (son{header:\""+header+"\"}),(father{header:\""+productfeature+"\"}) CREATE (son)-[:productfeature]->(father)")
+					listproductfeature.append(productfeature)
 				elif('bsbm:producer' in line):
 					producer = line.split(':')[2]
 					producer = producer.replace(" ;","")
@@ -172,6 +194,16 @@ with open(sys.argv[1],'r', buffering = 4096) as f1:
 					date = line.replace("    dc:date ","")
 					date = date.replace("^^xsd:date .","")
 					# QUERY
+					# print listpropertynumeric
+					outputnumeric = ','.join(listpropertynumeric)
+					# print outputnumeric
+					outputtextual = ','.join(listpropertytextual)
+					session.run("CREATE ("+header+":Product {header:\""+header+"\",label:"+label+",comment:"+comment+","+outputnumeric+","+outputtextual+",date:"+date+"})")
+					session.run("MATCH (son{header:\""+header+"\"}),(father{header:\""+producer+"\"}) CREATE (son)-[:producer]->(father)")
+					session.run("MATCH (son{header:\""+header+"\"}),(father{header:\""+producttype+"\"}) CREATE (son)-[:producttype]->(father)")
+					session.run("MATCH (son{header:\""+header+"\"}),(father{header:\""+publisher+"\"}) CREATE (son)-[:publisher]->(father)")
+					for e in listproductfeature:
+						session.run("MATCH (son{header:\""+header+"\"}),(father{header:\""+e+"\"}) CREATE (son)-[:productfeature]->(father)")
 
 				else:
 					print("Well, this is embarrassing... mold="+str(mold))
