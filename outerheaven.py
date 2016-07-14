@@ -14,6 +14,9 @@ to add in the database:MATCH p=(header:Product)-[]->() RETURN p LIMIT 100
 2  - ProductFeature
 3  - Producer
 4  - Product
+5  - Vendor
+6  - Offer
+7  - Review
 """
 from neo4j.v1 import GraphDatabase, basic_auth
 from timeit import default_timer as timer
@@ -208,6 +211,41 @@ with open(sys.argv[1],'r', buffering = 4096) as f1:
 				else:
 					print("Well, this is embarrassing... mold="+str(mold))
 #######################################################################################################			
+			elif(mold == 5):
+				if('rdf:type' in line):
+					pass
+				elif('rdfs:label' in line):
+					label = line.replace("    rdfs:label ","")
+					label = label.replace(" ;","")
+				elif('rdfs:comment' in line):
+					comment = line.replace("    rdfs:comment ","")
+					comment = comment.replace(" ;","")
+				elif('foaf:homepage' in line):
+					homepage = line.replace("    foaf:homepage <","")
+					homepage = homepage.replace("> ;","")
+				elif('bsbm:country' in line):
+					country = line.replace("    bsbm:country <","")
+					country = country.replace("> ;","")
+				elif('dc:publisher' in line):
+					pass
+				elif('dc:date' in line):
+					date = line.replace("    dc:date ","")
+					date = date.replace("^^xsd:date .","")
+					# QUERY
+					session.run("CREATE ("+header+":Vendor {header:\""+header+"\",label:"+label+",comment:"+comment+",date:"+date+"})")
+					session.run("CREATE (homepage:Homepage {header:\""+homepage+"\"})")
+					listCountry,countryChecked=checkCountry(country,listCountry)
+					if(countryChecked == False):
+						session.run("CREATE (country:Country {header:\""+country+"\"})")
+					session.run("MATCH (son{header:\""+header+"\"}),(father{header:\""+homepage+"\"}) CREATE (son)-[:homepage]->(father)")
+					session.run("MATCH (son{header:\""+header+"\"}),(father{header:\""+country+"\"}) CREATE (son)-[:country]->(father)")
+				else:
+					print("Well, this is embarrassing... mold="+str(mold))
+#######################################################################################################			
+			elif(mold == 6):
+				if('rdf:type' in line):
+					pass
+#######################################################################################################			
 			else:
 				print ("--------------Executing database querys.--------------")
 				session.close()
@@ -231,6 +269,13 @@ with open(sys.argv[1],'r', buffering = 4096) as f1:
 				else:
 					header = line.split(':')[1]
 					mold = 4
+			elif('dataFromVendor' in line):
+				if (':Vendor' in line):
+					header = line.split(':')[1]
+					mold = 5
+				else:
+					header = line.split(':')[1]
+					mold = 6
 			else:
 				mold = 0
 
