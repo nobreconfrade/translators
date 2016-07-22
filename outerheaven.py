@@ -16,7 +16,8 @@ to add in the database:MATCH p=(header:Product)-[]->() RETURN p LIMIT 100
 4  - Product
 5  - Vendor
 6  - Offer
-7  - Review
+7  - Reviewer
+8  - Review
 """
 from neo4j.v1 import GraphDatabase, basic_auth
 from timeit import default_timer as timer
@@ -63,6 +64,14 @@ def getProductPropertyTextural(line):
 	# print textual
 	stringpropertytextual = propertytextual+":"+textual
 	return stringpropertytextual
+
+def getRating(line):
+	rating = line.split(' ')[4]
+	rating = rating.replace('bsbm:','')
+	value = line.split(' ')[5]
+	value = value.replace('^^xsd:integer','')
+	stringrating = rating+":"+value
+	return stringrating
 
 # PERTINENT VARIABLES
 session = connectDB()
@@ -162,9 +171,6 @@ with open(sys.argv[1],'r', buffering = 4096) as f1:
 					print("Well, this is embarrassing... mold="+str(mold))
 #######################################################################################################			
 			elif(mold == 4):
-				###########BE AWARE###########
-				# I still don't know if the 4 spaces in the beggining of every line is going to cause trouble with the split(' ')
-				###########BE AWARE###########
 				if('rdf:type bsbm:Product' in line):
 					listpropertynumeric = []
 					listpropertytextual = []
@@ -245,14 +251,110 @@ with open(sys.argv[1],'r', buffering = 4096) as f1:
 			elif(mold == 6):
 				if('rdf:type' in line):
 					pass
+				elif('bsbm:product' in line):
+					product = line.split(':')[2]
+					product = product.replace(" ;","")
+				elif('bsbm:vendor' in line):
+					vendor = line.split(':')[2]
+					vendor = vendor.replace(" ;","")
+				elif('bsbm:price' in line):
+					price = line.replace("    bsbm:price ","")
+					price = price.replace("^^bsbm:USD ;","")
+				elif('bsbm:validFrom' in line):
+					validfrom = line.replace("    bsbm:validFrom ","")
+					validfrom = validfrom.replace("^^xsd:dateTime ;","")
+				elif('bsbm:validTo' in line):
+					validto = line.replace("    bsbm:validTo ","")
+					validto = validto.replace("^^xsd:dateTime ;","")
+				elif('bsbm:deliveryDays' in line):
+					deliverydays = line.replace("    bsbm:deliveryDays ","")
+					deliverydays = deliverydays.replace("^^xsd:integer ;","")
+				elif('bsbm:offerWebpage' in line):
+					offerwebpage = line.replace("bsbm:offerWebpage <","")
+					offerwebpage = offerwebpage.replace("> ;","")
+				elif('dc:publisher' in line):
+					publisher = line.split(':')[2]
+					publisher = publisher.replace(" ;","")
+				elif('dc:date' in line):
+					date = line.replace("    dc:date ","")
+					date = date.replace("^^xsd:date .","")
+					# QUERY
+					session.run("CREATE ("+header+":Offer {header:\""+header+"\",price:"+price+",validFrom:"+validfrom+",validTo:"+validto+",deliveryDays:"+deliverydays+",date:"+date+"})")
+					session.run("CREATE (offerwebpage:OfferWebpage {header:\""+offerwebpage+"\"})")
+					session.run("MATCH (son{header:\""+header+"\"}),(father{header:\""+product+"\"}) CREATE (son)-[:product]->(father)")
+					session.run("MATCH (son{header:\""+header+"\"}),(father{header:\""+vendor+"\"}) CREATE (son)-[:vendor]->(father)")
+					session.run("MATCH (son{header:\""+header+"\"}),(father{header:\""+offerwebpage+"\"}) CREATE (son)-[:offerwebpage]->(father)")
+					session.run("MATCH (son{header:\""+header+"\"}),(father{header:\""+publisher+"\"}) CREATE (son)-[:publisher]->(father)")
+				else:
+					print("Well, this is embarrassing... mold="+str(mold))
+#######################################################################################################			
+			elif(mold == 7):
+				if('rdf:type' in line):
+					pass
+				elif('foaf:name' in line):
+					name = line.replace("    foaf:name ","")
+					name = name.replace(" ;","")
+				elif('foaf:mbox_sha1sum' in line):
+					mbox = line.replace("    foaf:mbox_sha1sum ","")
+					mbox = mbox.replace(" ;","")
+				elif('bsbm:country' in line):
+					country = line.replace("    bsbm:country <","")
+					country = country.replace("> ;","")					
+				elif('dc:publisher' in line):
+					publisher = line.split(':')[2]
+					publisher = publisher.replace(" ;","")
+				elif('dc:date' in line):
+					date = line.replace("    dc:date ","")
+					date = date.replace("^^xsd:date .","")
+					# QUERY
+					session.run("CREATE ("+header+":Person {header:\""+header+"\",name:"+name+",mbox_sha1sum:"+mbox+",date:"+date+"})")
+					listCountry,countryChecked=checkCountry(country,listCountry)
+					if(countryChecked == False):
+						session.run("CREATE (country:Country {header:\""+country+"\"})")
+					session.run("MATCH (son{header:\""+header+"\"}),(father{header:\""+publisher+"\"}) CREATE (son)-[:publisher]->(father)")
+					session.run("MATCH (son{header:\""+header+"\"}),(father{header:\""+country+"\"}) CREATE (son)-[:country]->(father)")
+				else:
+					print("Well, this is embarrassing... mold="+str(mold))
+#######################################################################################################			
+			elif(mold == 8):
+				if('rdf:type' in line):
+					listrating = []
+					pass
+				elif('bsbm:reviewFor' in line):
+					reviewfor = line.split(':')[2]
+					reviewfor = reviewfor.replace(" ;","")
+				elif('rev:reviewer' in line):
+					reviewer = line.split(':')[2]
+					reviewer = reviewer.replace(" ;","")
+				elif('dc:title' in line):
+					title = line.replace("    dc:title ","")
+					title = title.replace(" ;","")
+				elif('rev:text' in line):
+					text = line.split('@')[0]
+					text = text.replace("    rev:text ","")
+				elif('bsbm:rating' in line):
+					listrating.append(getRating(line))
+				elif('bsbm:reviewDate' in line):
+					reviewdate = line.replace("    bsbm:reviewDate ","")
+					reviewdate = reviewdate.replace("^^xsd:dateTime ;","")
+				elif('dc:publisher' in line):
+					publisher = line.split(':')[2]
+					publisher = publisher.replace(" ;","")
+				elif('dc:date' in line):
+					date = line.replace("    dc:date ","")
+					date = date.replace("^^xsd:date .","")
+					# QUERY
+					outputrating = ','.join(listrating)
+					if(len(outputrating)==0):
+						session.run("CREATE ("+header+":Review {header:\""+header+"\",title:"+title+",text:"+text+",reviewDate:"+reviewdate+",date:"+date+"})")
+					else:
+						session.run("CREATE ("+header+":Review {header:\""+header+"\",title:"+title+",text:"+text+","+outputrating+",reviewDate:"+reviewdate+",date:"+date+"})")
+					session.run("MATCH (son{header:\""+header+"\"}),(father{header:\""+reviewfor+"\"}) CREATE (son)-[:reviewfor]->(father)")
+					session.run("MATCH (son{header:\""+header+"\"}),(father{header:\""+reviewer+"\"}) CREATE (son)-[:reviewer]->(father)")
+					session.run("MATCH (son{header:\""+header+"\"}),(father{header:\""+publisher+"\"}) CREATE (son)-[:publisher]->(father)")
 #######################################################################################################			
 			else:
-				print ("--------------Executing database querys.--------------")
-				session.close()
-				timeCount(startTimer)
-				print ("--------------Closing program.--------------")
-				print (exit)
-				input()
+				print ("i don't know =/")
 #######################################################################################################			
 										
 		else:
@@ -276,7 +378,19 @@ with open(sys.argv[1],'r', buffering = 4096) as f1:
 				else:
 					header = line.split(':')[1]
 					mold = 6
+			elif('dataFromRatingSite' in line):
+				if (':Reviewer' in line):
+					header = line.split(':')[1]
+					mold = 7
+				else:
+					header = line.split(':')[1]
+					mold = 8
 			else:
 				mold = 0
 
+print ("--------------Executing database querys.--------------")
 session.close()
+timeCount(startTimer)
+print ("--------------Closing program.--------------")
+print (exit)
+input()
