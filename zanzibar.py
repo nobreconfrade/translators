@@ -5,8 +5,6 @@ Author: William Pereira
 
 For Python ver: 2.7
 
-to add in the database:MATCH p=(header:Product)-[]->() RETURN p LIMIT 100
-
 ////////'mold' cheat sheet:
 
 0  - exit
@@ -37,47 +35,11 @@ def timeCount(startTimer):
 		minuteTime = minuteTime + 1
 		endTimer = endTimer - 60
 	print("--- "+str(minuteTime)+" minutes and "+str(endTimer)+" seconds ---")
-		
-def checkCountry(country,listCountry):
-	for i in listCountry:
-		if(country == str(i)): 
-			return (listCountry,True)
-	listCountry.append(country)
-	return (listCountry,False)
-
-def getProductPropertyNumeric(line):
-	propertynumeric = line.split(' ')[4]
-	propertynumeric = propertynumeric.replace('bsbm:','')
-	numeric = line.split(' ')[5]
-	# print ("-----------------------------------")
-	# print numeric
-	numeric = numeric.replace('^^xsd:integer','')
-	# print numeric
-	stringpropertynumeric = propertynumeric+":"+numeric
-	return stringpropertynumeric
-
-def getProductPropertyTextural(line):
-	propertytextual = line.split(' ')[4]
-	propertytextual = propertytextual.replace('bsbm:','')
-	textual = line.replace('bsbm:'+propertytextual+' ','')
-	textual = textual.replace('^^xsd:string ;','')
-	# print textual
-	stringpropertytextual = propertytextual+":"+textual
-	return stringpropertytextual
-
-def getRating(line):
-	rating = line.split(' ')[4]
-	rating = rating.replace('bsbm:','')
-	value = line.split(' ')[5]
-	value = value.replace('^^xsd:integer','')
-	stringrating = rating+":"+value
-	return stringrating
 
 # PERTINENT VARIABLES
 session = connectDB()
 startTimer = timer()
 subclassof = ""
-listCountry = []
 
 # PROGRAM
 with open(sys.argv[1],'r', buffering = 4096) as f1:
@@ -86,12 +48,11 @@ with open(sys.argv[1],'r', buffering = 4096) as f1:
 		if('    ' in line):
 #######################################################################################################			
 			if(mold == 1):
-				pass
 				if('rdf:type' in line):
 					pass
 				elif('rdfs:label' in line):
-					label = line.replace("    rdfs:label \"","")
-					label = label.replace("\" ;","")
+					label = line.replace("    rdfs:label ","")
+					label = label.replace(" ;","")
 					# print(label)
 				elif('rdfs:subClassOf' in line):
 					subclassof = line.replace("    rdfs:subClassOf bsbm-inst:","")
@@ -107,17 +68,22 @@ with open(sys.argv[1],'r', buffering = 4096) as f1:
 					date = line.replace("    dc:date ","")
 					date = date.replace("^^xsd:date .","")
 					# QUERY
-					session.run("CREATE ("+header+":ProductType {header:\""+header+"\",label:\""+label+"\",comment:"+comment+",date:"+date+"})")
+					session.run("CREATE ("+header+":ProductType {header:\""+header+"\"})")
+					session.run("CREATE ("+header+":label {label:"+label+"})")
+					session.run("CREATE ("+header+":comment {comment:"+comment+"})")
+					session.run("CREATE ("+header+":date {date:"+date+"})")
 					if(subclassof == ""):
-						session.run("CREATE (publisher:Publisher {header:\""+publisher+"\"})")
+						session.run("CREATE (publisher:Publisher {publisher:\""+publisher+"\"})")
 					else:
 						session.run("MATCH (son{header:\""+header+"\"}),(father{header:\""+subclassof+"\"}) CREATE (son)-[:subClassOf]->(father)")
-					session.run("MATCH (son{header:\""+header+"\"}),(father{header:\""+publisher+"\"}) CREATE (son)-[:publisher]->(father)")
+					session.run("MATCH (son{header:\""+header+"\"}),(father{label:"+label+"}) CREATE (son)-[:label]->(father)")
+					session.run("MATCH (son{header:\""+header+"\"}),(father{comment:"+comment+"}) CREATE (son)-[:comment]->(father)")
+					session.run("MATCH (son{header:\""+header+"\"}),(father{date:"+date+"}) CREATE (son)-[:date]->(father)")
+					session.run("MATCH (son{header:\""+header+"\"}),(father{publisher:\""+publisher+"\"}) CREATE (son)-[:publisher]->(father)")
 				else:
 					print("Well, this is embarrassing... mold="+str(mold))
 #######################################################################################################			
 			elif(mold == 2):
-				pass
 				if('rdf:type' in line):
 					pass
 				elif('rdfs:label' in line):
@@ -354,36 +320,36 @@ with open(sys.argv[1],'r', buffering = 4096) as f1:
 					session.run("MATCH (son{header:\""+header+"\"}),(father{header:\""+publisher+"\"}) CREATE (son)-[:publisher]->(father)")
 #######################################################################################################			
 			else:
-				print ("i don't know =/")
-#######################################################################################################													
+				pass
+#######################################################################################################			
 		else:
 			if('bsbm-inst:ProductType' in line):
 				header = line.replace("bsbm-inst:","")
 				mold = 1
-			elif('bsbm-inst:ProductFeature' in line):
-				header = line.replace("bsbm-inst:","")
-				mold = 2
-			elif('dataFromProducer' in line):
-				if(':Producer' in line):
-					header = line.split(':')[1]
-					mold = 3
-				else:
-					header = line.split(':')[1]
-					mold = 4
-			elif('dataFromVendor' in line):
-				if (':Vendor' in line):
-					header = line.split(':')[1]
-					mold = 5
-				else:
-					header = line.split(':')[1]
-					mold = 6
-			elif('dataFromRatingSite' in line):
-				if (':Reviewer' in line):
-					header = line.split(':')[1]
-					mold = 7
-				else:
-					header = line.split(':')[1]
-					mold = 8
+			# elif('bsbm-inst:ProductFeature' in line):
+			# 	header = line.replace("bsbm-inst:","")
+			# 	mold = 2
+			# elif('dataFromProducer' in line):
+			# 	if(':Producer' in line):
+			# 		header = line.split(':')[1]
+			# 		mold = 3
+			# 	else:
+			# 		header = line.split(':')[1]
+			# 		mold = 4
+			# elif('dataFromVendor' in line):
+			# 	if (':Vendor' in line):
+			# 		header = line.split(':')[1]
+			# 		mold = 5
+			# 	else:
+			# 		header = line.split(':')[1]
+			# 		mold = 6
+			# elif('dataFromRatingSite' in line):
+			# 	if (':Reviewer' in line):
+			# 		header = line.split(':')[1]
+			# 		mold = 7
+			# 	else:
+			# 		header = line.split(':')[1]
+			# 		mold = 8
 			else:
 				mold = 0
 
