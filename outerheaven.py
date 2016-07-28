@@ -78,6 +78,7 @@ session = connectDB()
 startTimer = timer()
 subclassof = ""
 listCountry = []
+flag = 0
 
 # PROGRAM
 with open(sys.argv[1],'r', buffering = 4096) as f1:
@@ -303,6 +304,9 @@ with open(sys.argv[1],'r', buffering = 4096) as f1:
 				elif('dc:publisher' in line):
 					publisher = line.split(':')[2]
 					publisher = publisher.replace(" ;","")
+					flag = flag + 1
+					if (flag == 1):
+						session.run("CREATE ("+header+":Publisher {header:"+publisher+"})")
 				elif('dc:date' in line):
 					date = line.replace("    dc:date ","")
 					date = date.replace("^^xsd:date .","")
